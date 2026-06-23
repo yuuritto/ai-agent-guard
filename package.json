@@ -1,5 +1,5 @@
 {
-  "name": "ai-agent-guard",
+  "name": "@entet/ai-agent-guard",
   "version": "0.1.0",
   "description": "Scan a project for leaked secrets, risky MCP configs, and unsafe automation before handing it to an AI coding agent (Claude Code, Cursor, Codex). Zero dependencies, runs locally.",
   "bin": {
