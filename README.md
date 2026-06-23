@@ -5,7 +5,7 @@ Scan a local project for security risks **before** you point an AI coding agent 
 AI coding agents (Claude Code, Cursor, Codex, Windsurf, …) read your whole repo and can execute commands, follow instruction files, and call MCP servers. A leaked key, an over-permissioned MCP config, or a hostile `CLAUDE.md` becomes the agent's problem the moment it starts. `ai-agent-guard` does a fast local pass and tells you what to look at first.
 
 ```
-npx ai-agent-guard
+npx @entet/ai-agent-guard
 ```
 
 No install, no config, no account.
@@ -25,22 +25,22 @@ No install, no config, no account.
 
 ```bash
 # scan the current directory
-npx ai-agent-guard
+npx @entet/ai-agent-guard
 
 # scan a specific path
-npx ai-agent-guard --path ./my-repo
+npx @entet/ai-agent-guard --path ./my-repo
 
 # machine-readable output (for CI)
-npx ai-agent-guard --json
+npx @entet/ai-agent-guard --json
 
 # disable colors
-npx ai-agent-guard --no-color
+npx @entet/ai-agent-guard --no-color
 ```
 
 Exit code is `0` when clean and `1` when there are findings, so it drops straight into CI:
 
 ```yaml
-- run: npx ai-agent-guard
+- run: npx @entet/ai-agent-guard
 ```
 
 Example output:
