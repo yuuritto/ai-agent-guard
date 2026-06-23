@@ -1,0 +1,47 @@
+{
+  "name": "ai-agent-guard",
+  "version": "0.1.0",
+  "description": "Scan a project for leaked secrets, risky MCP configs, and unsafe automation before handing it to an AI coding agent (Claude Code, Cursor, Codex). Zero dependencies, runs locally.",
+  "bin": {
+    "ai-agent-guard": "bin/ai-agent-guard.js"
+  },
+  "type": "commonjs",
+  "scripts": {
+    "test": "node test/run.js",
+    "selftest": "node bin/ai-agent-guard.js --path bin"
+  },
+  "files": [
+    "bin",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "security",
+    "secrets",
+    "secret-scanner",
+    "ai",
+    "ai-agent",
+    "claude",
+    "claude-code",
+    "cursor",
+    "codex",
+    "mcp",
+    "prompt-injection",
+    "cli",
+    "static-analysis",
+    "devsecops"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "author": "ENTET Inc.",
+  "license": "MIT",
+  "homepage": "https://github.com/yuuritto/ai-agent-guard#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yuuritto/ai-agent-guard.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yuuritto/ai-agent-guard/issues"
+  }
+}

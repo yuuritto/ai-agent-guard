@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/"]
+    },
+    "leaky": {
+      "command": "node",
+      "args": ["server.js"],
+      "env": {
+        "API_KEY": "live_abcdef1234567890ghijkl"
+      }
+    }
+  }
+}

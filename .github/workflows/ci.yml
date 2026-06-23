@@ -1,0 +1,50 @@
+name: ci
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node: [18, 20, 22]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+      # The shipped source is clean, so scanning it must exit 0.
+      # (The repo root deliberately contains vulnerable test fixtures, so we
+      # point the clean smoke test at the published bin/ directory.)
+      - name: Scan shipped source (expect clean, exit 0)
+        run: node bin/ai-agent-guard.js --path bin
+
+      # The fixture is intentionally vulnerable, so scanning it must exit 1.
+      - name: Scan vulnerable fixture (expect findings, exit 1)
+        shell: bash
+        run: |
+          if node bin/ai-agent-guard.js --path test/fixtures/vulnerable; then
+            echo "expected findings but got exit 0"
+            exit 1
+          else
+            echo "findings detected as expected"
+          fi
+
+      - name: JSON output is valid and reports findings
+        shell: bash
+        run: |
+          node bin/ai-agent-guard.js --json --path test/fixtures/vulnerable > out.json || true
+          node -e "const r=require('./out.json'); if(!(r.findings.length>0)) {console.error('no findings in json'); process.exit(1)} console.log('json ok:', r.findings.length, 'findings')"
+
+      - name: Run rule tests
+        run: node test/run.js

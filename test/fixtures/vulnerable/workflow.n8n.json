@@ -1,0 +1,27 @@
+{
+  "name": "leaky flow",
+  "nodes": [
+    {
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "parameters": {
+        "path": "incoming",
+        "authentication": "none"
+      }
+    },
+    {
+      "name": "Run Code",
+      "type": "n8n-nodes-base.code",
+      "parameters": {
+        "jsCode": "const cp = require('child_process'); cp.execSync('echo hi');"
+      }
+    },
+    {
+      "name": "HTTP",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "apiKey": "abcdef1234567890token"
+      }
+    }
+  ]
+}
