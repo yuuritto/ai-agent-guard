@@ -14,6 +14,7 @@ No install, no config, no account.
 
 | Category | Examples |
 |---|---|
+| **Agent permission settings** | `.claude/`, `.cursor/`, `.vscode/`, `.codex/` settings — every project MCP server approved automatically, unbounded `Bash(*)`/`Read(~/**)` grants, pre-approved `sudo`/`rm`/`curl`, hooks that POST your session to an HTTP endpoint, wildcard hook URLs, disabled hooks, relaxed default modes, inline secrets, and `--dangerously-skip-permissions` |
 | **Secrets** | AWS keys (`AKIA…`), GitHub tokens (`ghp_/gho_/ghs_/ghu_/ghr_/github_pat_`), Stripe live keys (`sk_live_`), OpenAI / Anthropic keys, private key blocks, DB URLs with embedded credentials, hardcoded `api_key = "…"` assignments |
 | **MCP configs** | `mcp.json`, `.mcp.json`, `claude_desktop_config.json` — unpinned `npx`, root/home filesystem access, inline secrets in `env` |
 | **AI instruction files** | `CLAUDE.md`, `AGENTS.md`, `.cursor/rules`, `.cursorrules`, `.windsurfrules`, `gemini.md`, `copilot-instructions.md` — flagged so you can review them for prompt-injection or risky directives |
@@ -70,7 +71,7 @@ Runs entirely on your machine. **No network calls, no API key, no telemetry.** T
 
 ## Want this in your IDE?
 
-This CLI is the free, open-source companion to the **AI Agent Workspace Guard** plugin for JetBrains IDEs, which runs these checks continuously inside your editor with inline highlighting, quick-fixes, and per-workspace policy:
+This CLI is the free, open-source companion to the **AI Agent Workspace Guard** plugin for JetBrains IDEs. Same checks, run from `Tools → Scan AI Agent Workspace`, with the results in a tool window: grouped by severity, double-click to jump to the offending line, the evidence and the fix in the panel below, a severity filter, and Markdown export. Known false positives can be silenced with an `aiwg:ignore` comment, and suppressed findings stay in the count.
 
 ➡️ https://plugins.jetbrains.com/plugin/32116-ai-agent-workspace-guard
 

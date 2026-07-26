@@ -220,6 +220,165 @@ function scanMcpConfig(relPath, text, findings, data) {
   }
 }
 
+const AGENT_SETTINGS_DIRS = ['.claude/', '.cursor/', '.vscode/', '.codex/', '.gemini/'];
+
+function isAgentSettingsFile(relPath, base) {
+  if (!base.toLowerCase().endsWith('.json')) return false;
+  if (base.toLowerCase() === 'claude_desktop_config.json') return true;
+  const norm = relPath.replace(/\\/g, '/').toLowerCase();
+  return AGENT_SETTINGS_DIRS.some((dir) => norm.includes(dir));
+}
+
+/** A grant that starts at a wildcard, the home directory, or the filesystem root. */
+const UNBOUNDED_GRANT = /^(Bash|Read|Edit|Write|WebFetch|WebSearch|Task)\(\s*(\*|~|\/|\/\/|\*\*)/i;
+/** Commands that hand over the machine, the network, or the repository history. */
+const DANGEROUS_GRANT =
+  /^Bash\(\s*(sudo|rm|curl|wget|chmod|chown|dd|mkfs|shutdown|reboot|git\s+push\s+--force|npm\s+publish|docker)\b/i;
+
+function scanAgentSettings(relPath, text, findings, data) {
+  if (!data || typeof data !== 'object') return;
+
+  if (data.enableAllProjectMcpServers === true) {
+    findings.push({
+      ruleId: 'agent.auto-approve-mcp',
+      description: 'Every MCP server in this project is approved automatically — a server added by a teammate or a merged pull request runs without review',
+      severity: 'HIGH',
+      file: relPath,
+      line: lineOf(text, 'enableAllProjectMcpServers'),
+      evidence: 'enableAllProjectMcpServers: true',
+    });
+  }
+
+  if (data.disableAllHooks === true) {
+    findings.push({
+      ruleId: 'agent.hooks-disabled',
+      description: 'All agent hooks are disabled — local safety checks will not run',
+      severity: 'MEDIUM',
+      file: relPath,
+      line: lineOf(text, 'disableAllHooks'),
+      evidence: 'disableAllHooks: true',
+    });
+  }
+
+  const permissions = data.permissions && typeof data.permissions === 'object' ? data.permissions : {};
+
+  if (typeof permissions.defaultMode === 'string' &&
+      /^(auto|acceptEdits|bypassPermissions)$/i.test(permissions.defaultMode)) {
+    findings.push({
+      ruleId: 'agent.relaxed-default-mode',
+      description: `Default permission mode "${permissions.defaultMode}" does not ask before acting`,
+      severity: 'MEDIUM',
+      file: relPath,
+      line: lineOf(text, 'defaultMode'),
+      evidence: `defaultMode: ${permissions.defaultMode}`,
+    });
+  }
+
+  // Only the allow list. The same pattern under deny or ask is the safe configuration, and
+  // reporting it would teach people to ignore this tool.
+  const allow = Array.isArray(permissions.allow) ? permissions.allow : [];
+  for (const raw of allow) {
+    const grant = String(raw);
+    if (UNBOUNDED_GRANT.test(grant)) {
+      findings.push({
+        ruleId: 'agent.unbounded-permission',
+        description: `Agent is granted "${grant}" without bounds — it reaches every file the IDE user can read`,
+        severity: 'HIGH',
+        file: relPath,
+        line: lineOf(text, grant),
+        evidence: grant,
+      });
+    } else if (DANGEROUS_GRANT.test(grant)) {
+      findings.push({
+        ruleId: 'agent.dangerous-permission',
+        description: `Agent is pre-approved to run "${grant}" without a prompt`,
+        severity: 'HIGH',
+        file: relPath,
+        line: lineOf(text, grant),
+        evidence: grant,
+      });
+    }
+  }
+
+  const hooks = data.hooks && typeof data.hooks === 'object' ? data.hooks : {};
+  for (const [event, entries] of Object.entries(hooks)) {
+    for (const entry of Array.isArray(entries) ? entries : []) {
+      if (entry && typeof entry === 'object' && entry.type === 'http') {
+        findings.push({
+          ruleId: 'agent.http-hook',
+          description: `Hook "${event}" forwards session activity to an HTTP endpoint`,
+          severity: 'HIGH',
+          file: relPath,
+          line: lineOf(text, String(entry.url || event)),
+          evidence: mask(String(entry.url || '')),
+        });
+      }
+    }
+  }
+
+  for (const url of Array.isArray(data.allowedHttpHookUrls) ? data.allowedHttpHookUrls : []) {
+    const value = String(url);
+    if (value === '*' || /^https?:\/\/\*/.test(value)) {
+      findings.push({
+        ruleId: 'agent.wildcard-hook-url',
+        description: 'Agent hooks may post to any host — a wildcard here is an exfiltration path',
+        severity: 'HIGH',
+        file: relPath,
+        line: lineOf(text, value),
+        evidence: value,
+      });
+    }
+  }
+
+  const env = data.env && typeof data.env === 'object' ? data.env : {};
+  for (const [key, value] of Object.entries(env)) {
+    const val = String(value);
+    if (val.length >= 8 && !/^\$\{?[A-Za-z0-9_]+\}?$/.test(val) &&
+        /(key|token|secret|password|credential)/i.test(key)) {
+      findings.push({
+        ruleId: 'agent.inline-secret',
+        description: `Agent settings hardcode a secret in env "${key}"`,
+        severity: 'CRITICAL',
+        file: relPath,
+        line: lineOf(text, key),
+        evidence: mask(val),
+      });
+    }
+  }
+}
+
+/** Files where a flag on a command line actually runs something. */
+function isExecutableContext(relPath, base) {
+  const lower = base.toLowerCase();
+  if (lower === 'package.json' || lower === 'makefile' || lower === 'procfile') return true;
+  if (lower.startsWith('dockerfile') || lower.startsWith('docker-compose')) return true;
+  if (/\.(sh|bash|zsh|fish|bat|cmd|ps1)$/.test(lower)) return true;
+  const norm = relPath.replace(/\\/g, '/').toLowerCase();
+  if (norm.includes('.github/workflows/') || norm.includes('.gitlab-ci')) return true;
+  return isAgentSettingsFile(relPath, base);
+}
+
+const SKIP_PERMISSIONS_RE = /--dangerously-skip-permissions|--yolo\b|--dangerously-allow-browser/;
+
+/**
+ * Reported only where the flag runs. Security notes and linters quote it, and flagging prose
+ * would make this loudest in the repositories that care most.
+ */
+function scanSkipPermissions(relPath, lines, findings) {
+  lines.forEach((line, i) => {
+    if (SKIP_PERMISSIONS_RE.test(line)) {
+      findings.push({
+        ruleId: 'agent.skip-permissions',
+        description: 'Permission prompts are disabled for an AI agent — destructive commands will not stop for review',
+        severity: 'CRITICAL',
+        file: relPath,
+        line: i + 1,
+        evidence: line.trim().slice(0, 180),
+      });
+    }
+  });
+}
+
 function scanGithubWorkflow(relPath, text, findings) {
   const lower = text.toLowerCase();
   const hasPRTarget = /on:\s*[\s\S]*?pull_request_target/.test(lower) ||
@@ -424,6 +583,14 @@ function scanFile(absPath, relPath, findings, counters) {
 
   if (lowerBase === 'mcp.json' || lowerBase === '.mcp.json' || lowerBase === 'claude_desktop_config.json') {
     scanMcpConfig(relPath, text, findings, jsonData);
+  }
+
+  if (isAgentSettingsFile(relPath, base)) {
+    scanAgentSettings(relPath, text, findings, jsonData);
+  }
+
+  if (isExecutableContext(relPath, base)) {
+    scanSkipPermissions(relPath, lines, findings);
   }
 
   if (isInstructionFile(relPath, base)) {

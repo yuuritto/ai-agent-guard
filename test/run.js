@@ -58,6 +58,22 @@ check('detects n8n webhook no auth', rules.has('n8n.webhook-no-auth'));
 check('detects n8n dangerous code', rules.has('n8n.dangerous-code'));
 check('detects n8n inline credential', rules.has('n8n.inline-credential'));
 
+check('detects auto-approved MCP servers', rules.has('agent.auto-approve-mcp'));
+check('detects disabled hooks', rules.has('agent.hooks-disabled'));
+check('detects relaxed default mode', rules.has('agent.relaxed-default-mode'));
+check('detects unbounded permission grant', rules.has('agent.unbounded-permission'));
+check('detects dangerous permission grant', rules.has('agent.dangerous-permission'));
+check('detects HTTP hook', rules.has('agent.http-hook'));
+check('detects wildcard hook URL', rules.has('agent.wildcard-hook-url'));
+check('detects inline secret in agent settings', rules.has('agent.inline-secret'));
+check('detects skipped permission prompts', rules.has('agent.skip-permissions'));
+
+const denyLeak = vuln.report.findings.find(
+  (f) => (f.ruleId === 'agent.unbounded-permission' || f.ruleId === 'agent.dangerous-permission') &&
+    /deny/i.test(String(f.evidence)),
+);
+check('deny-list entries are not reported', !denyLeak);
+
 const masked = vuln.report.findings.find((f) => f.ruleId === 'secret.aws-access-key');
 check('evidence is masked', masked && /\*/.test(masked.evidence) && !masked.evidence.includes('IOSFODNN7'));
 
