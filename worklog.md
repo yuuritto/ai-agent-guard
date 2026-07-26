@@ -11,4 +11,9 @@
   - 初回リリース commit `046db6c` から入っていたため、**npm 0.1.1 と GitHub の公開 README に現在も掲載されている**。公開の是非はユーザー許可待ち。
 - 検証: `node test/run.js` 34 チェック全通過（新規9＋deny 誤検知防止1）。実プロジェクト `project-tracker`（87ファイル）走査は `ai.instruction-file` の LOW 1件のみで、新ルール由来の誤検知ゼロ。
 - version 0.1.1 → **0.2.0**。
-- **未実施（要ユーザー許可）**: `git push`（GitHub の虚偽記載訂正）と `npm publish`（0.2.0 公開）。どちらも外部公開行為。
+- ✅ **公開完了**（ユーザー明示許可「やれ」）:
+  - `git push origin master` → GitHub 反映を **local HEAD == remote master（`efd6562`）** と、公開 README から虚偽記載が消えたこと（`gh api` 経由の grep が 0 件）で実測確認。
+  - `npm publish` → `npm view @entet/ai-agent-guard version` が **0.2.0**。tarball は 4 ファイル（LICENSE / README / bin / package.json）でテストフィクスチャの混入なし。
+  - 受け手経路の実測: `npx --yes @entet/ai-agent-guard --path <demo>` で **v0.2.0** が起動し、`agent.skip-permissions` / `agent.auto-approve-mcp` / `agent.unbounded-permission` / `agent.dangerous-permission` などを正しい行番号で検出することを確認。
+- ⚠️ **npx で一度失敗したが原因は npm キャッシュ**。publish 直後に npx が取得に失敗し、その失敗結果をキャッシュしたため `'ai-agent-guard' は認識されていません` が出続けた。切り分け: 0.1.1 は npx で動く / 無関係パッケージも npx で動く / `npm install` 直後のローカル shim は動く → パッケージ側の欠陥ではないと確定。`npm cache clean --force` と `_npx` 削除で解消。**publish 直後の npx 失敗はキャッシュを疑う**。
+- ℹ️ 抑制機構（`aiwg:ignore`）は **CLI には入れていない**。有料プラグイン側の機能として残す意図的な差。デモの `# aiwg:ignore` 付き行も CLI では検出される（仕様どおり）。
