@@ -100,6 +100,27 @@ const SECRET_RULES = [
   },
 ];
 
+function sanitizeEvidence(value) {
+  let sanitized = String(value);
+  for (const rule of SECRET_RULES) {
+    const flags = rule.regex.flags.includes('g')
+      ? rule.regex.flags
+      : rule.regex.flags + 'g';
+    sanitized = sanitized.replace(
+      new RegExp(rule.regex.source, flags),
+      (match) => mask(match),
+    );
+  }
+  return sanitized;
+}
+
+function sanitizeFindingEvidence(findings) {
+  return findings.map((finding) => ({
+    ...finding,
+    evidence: sanitizeEvidence(finding.evidence),
+  }));
+}
+
 // Placeholder-ish values to suppress generic-assignment noise.
 const PLACEHOLDER_RE = /^(?:x{3,}|\.{3,}|<[^>]+>|\$\{[^}]+\}|your[_-]|changeme|example|placeholder|todo|null|true|false|process\.env)/i;
 
@@ -303,14 +324,19 @@ function scanAgentSettings(relPath, text, findings, data) {
   const hooks = data.hooks && typeof data.hooks === 'object' ? data.hooks : {};
   for (const [event, entries] of Object.entries(hooks)) {
     for (const entry of Array.isArray(entries) ? entries : []) {
-      if (entry && typeof entry === 'object' && entry.type === 'http') {
+      if (!entry) continue;
+      const handlers = [];
+      if (entry.type) handlers.push(entry);
+      if (Array.isArray(entry.hooks)) handlers.push(...entry.hooks);
+      for (const handler of handlers) {
+        if (!handler || handler.type !== 'http') continue;
         findings.push({
           ruleId: 'agent.http-hook',
           description: `Hook "${event}" forwards session activity to an HTTP endpoint`,
           severity: 'HIGH',
           file: relPath,
-          line: lineOf(text, String(entry.url || event)),
-          evidence: mask(String(entry.url || '')),
+          line: lineOf(text, String(handler.url || event)),
+          evidence: mask(String(handler.url || '')),
         });
       }
     }
@@ -771,7 +797,7 @@ function main() {
   const counters = { scanned: 0, skipped: 0 };
   walk(root, findings, counters);
 
-  const deduped = sortFindings(dedupe(findings));
+  const deduped = sortFindings(dedupe(sanitizeFindingEvidence(findings)));
 
   if (opts.json) {
     process.stdout.write(JSON.stringify({

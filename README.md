@@ -8,7 +8,8 @@ AI coding agents (Claude Code, Cursor, Codex, Windsurf, …) read your whole rep
 npx @entet/ai-agent-guard
 ```
 
-No install, no config, no account.
+No project install, config, or account. Requires Node.js 18 or newer. `npx` may
+download the package from npm; the scanner itself does not make network calls.
 
 ## What it checks
 
@@ -47,18 +48,18 @@ Exit code is `0` when clean and `1` when there are findings, so it drops straigh
 Example output:
 
 ```
-  AI Agent Guard  v0.1.0
+  AI Agent Guard  v0.2.1
   scanned: /home/me/my-repo
 
   CRITICAL
     ● .env:3  [secret.aws-access-key]
       AWS access key ID
-      evidence: AKIA****************WXYZ
+      evidence: AKIA****************
 
   HIGH
     ● .mcp.json:5  [mcp.unpinned-npx]
       MCP server "fs" runs npx without a pinned version
-      evidence: npx ****************r-fs
+      evidence: npx ****************************
 
   ────────────────────────────────────────────────
   files scanned: 142    skipped: 6
@@ -67,11 +68,13 @@ Example output:
 
 ## Private by design
 
-Runs entirely on your machine. **No network calls, no API key, no telemetry.** The source is a single dependency-free file — read it: [`bin/ai-agent-guard.js`](bin/ai-agent-guard.js). Evidence is masked in output (first 4 and last 4 characters only).
+Runs entirely on your machine. **The scanner makes no network calls, needs no API key, and sends no telemetry.** The source is a single dependency-free file — read it: [`bin/ai-agent-guard.js`](bin/ai-agent-guard.js). Secret-shaped values found in any evidence field are masked: the first 4 characters of each match are retained and the remainder is replaced with asterisks. Other command or source excerpts may still be sensitive, so review the report before sharing it.
 
 ## Want this in your IDE?
 
-This CLI is the free, open-source companion to the **AI Agent Workspace Guard** plugin for JetBrains IDEs. Same checks, run from `Tools → Scan AI Agent Workspace`, with the results in a tool window: grouped by severity, double-click to jump to the offending line, the evidence and the fix in the panel below, a severity filter, and Markdown export. Known false positives can be silenced with an `aiwg:ignore` comment, and suppressed findings stay in the count.
+This CLI is the free, open-source companion to the **AI Agent Workspace Guard** plugin for JetBrains IDEs. The products share several checks, but their rule sets are not identical: the IDE plugin also inspects instruction content for risky directives and warns about credential files that Git is not ignoring, while the CLI reports instruction-file presence for human review.
+
+Run the IDE plugin from `Tools → Scan AI Agent Workspace`. Its results appear in a tool window grouped by severity, with line navigation, evidence and remediation guidance, a severity filter, and Markdown export. Known false positives can be silenced with an `aiwg:ignore` comment, and suppressed findings stay in the count.
 
 ➡️ https://plugins.jetbrains.com/plugin/32116-ai-agent-workspace-guard
 

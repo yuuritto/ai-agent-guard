@@ -1,6 +1,8 @@
 'use strict';
 
 const { execFileSync } = require('child_process');
+const fs = require('fs');
+const os = require('os');
 const path = require('path');
 
 const CLI = path.join(__dirname, '..', 'bin', 'ai-agent-guard.js');
@@ -68,6 +70,12 @@ check('detects wildcard hook URL', rules.has('agent.wildcard-hook-url'));
 check('detects inline secret in agent settings', rules.has('agent.inline-secret'));
 check('detects skipped permission prompts', rules.has('agent.skip-permissions'));
 
+const nestedHttpHook = vuln.report.findings.find(
+  (finding) => finding.ruleId === 'agent.http-hook' &&
+    finding.file.replace(/\\/g, '/').endsWith('.claude/nested-hooks.json'),
+);
+check('detects HTTP hook in the documented nested handler shape', Boolean(nestedHttpHook));
+
 const denyLeak = vuln.report.findings.find(
   (f) => (f.ruleId === 'agent.unbounded-permission' || f.ruleId === 'agent.dangerous-permission') &&
     /deny/i.test(String(f.evidence)),
@@ -76,6 +84,27 @@ check('deny-list entries are not reported', !denyLeak);
 
 const masked = vuln.report.findings.find((f) => f.ruleId === 'secret.aws-access-key');
 check('evidence is masked', masked && /\*/.test(masked.evidence) && !masked.evidence.includes('IOSFODNN7'));
+
+const crossRuleDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ai-agent-guard-cross-mask-'));
+try {
+  const crossRuleValue = ['cross', 'rule', 'redaction', 'value'].join('-');
+  fs.writeFileSync(
+    path.join(crossRuleDir, 'run.sh'),
+    `claude --dangerously-skip-permissions token="${crossRuleValue}"\n`,
+  );
+  const crossRule = scan(crossRuleDir);
+  const crossRuleEvidence = crossRule.report.findings
+    .map((finding) => finding.evidence)
+    .join('\n');
+  check(
+    'secret-like values are masked across every finding rule',
+    crossRule.code === 1 &&
+      crossRuleEvidence.includes('*') &&
+      !crossRuleEvidence.includes(crossRuleValue),
+  );
+} finally {
+  fs.rmSync(crossRuleDir, { recursive: true, force: true });
+}
 
 console.log('clean fixture:');
 check('exit code 0', clean.code === 0);
