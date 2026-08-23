@@ -1,0 +1,98 @@
+{
+  "schemaVersion": 1,
+  "policyRevision": "2026-08-23",
+  "publishedBaseline": "0.2.0",
+  "role": "Free MIT terminal and CI preflight with a frozen detector catalog",
+  "expectedSecretRulePropertyCount": 8,
+  "expectedFindingRulePropertyCount": 24,
+  "expectedOptionBranchCount": 8,
+  "expectedLongOptionLiteralCount": 6,
+  "packageManifestSha256": "cac167d0c81c15019ed78416104a36e887afe010f6c8cdc6f2fc5b3a70f93406",
+  "allowedBinEntrypoints": {
+    "ai-agent-guard": "bin/ai-agent-guard.js"
+  },
+  "allowedPackageFileEntries": [
+    "LICENSE",
+    "README.md",
+    "bin",
+    "product-boundary.json"
+  ],
+  "allowedBinFiles": [
+    "bin/ai-agent-guard.js"
+  ],
+  "cliSourceSha256": "f82c372749b5b588856616b88404559d1725caa1d7ee69e3d13227ba03e60167",
+  "parseArgsSha256": "6f5d95e0beb0f9ce11f02d7afe1a40b9143914151fb23497df40d3c1d8e2cca1",
+  "allowedParseArgsStringLiterals": [
+    "-",
+    "--help",
+    "--json",
+    "--no-color",
+    "--path",
+    "--path=",
+    "--version",
+    "-h",
+    "-v",
+    ".",
+    "."
+  ],
+  "allowedLongOptions": [
+    "--help",
+    "--json",
+    "--no-color",
+    "--path",
+    "--version"
+  ],
+  "allowedFindingFields": [
+    "description",
+    "evidence",
+    "file",
+    "line",
+    "ruleId",
+    "severity"
+  ],
+  "allowedDynamicRuleIdExpressions": [
+    "rule.id"
+  ],
+  "allowedRuleIds": [
+    "agent.auto-approve-mcp",
+    "agent.dangerous-permission",
+    "agent.hooks-disabled",
+    "agent.http-hook",
+    "agent.inline-secret",
+    "agent.relaxed-default-mode",
+    "agent.skip-permissions",
+    "agent.unbounded-permission",
+    "agent.wildcard-hook-url",
+    "ai.instruction-file",
+    "gha.broad-permissions",
+    "gha.pr-target-checkout",
+    "gha.script-injection",
+    "mcp.broad-filesystem",
+    "mcp.broad-permissions",
+    "mcp.inline-secret",
+    "mcp.unpinned-npx",
+    "n8n.dangerous-code",
+    "n8n.inline-credential",
+    "n8n.webhook-no-auth",
+    "pkg.curl-pipe-sh",
+    "pkg.lifecycle-script",
+    "pkg.lifecycle-unpinned-npx",
+    "secret.anthropic-key",
+    "secret.aws-access-key",
+    "secret.db-url-credentials",
+    "secret.generic-assignment",
+    "secret.github-token",
+    "secret.openai-key",
+    "secret.private-key",
+    "secret.stripe-live-key"
+  ],
+  "premiumOnlyCapabilities": [
+    "instruction-content analysis",
+    "credential-file coverage checks against .gitignore",
+    "finding suppression and waiver management",
+    "finding-specific remediation and automatic fixes",
+    "interactive triage, navigation, filtering, and rich reports",
+    "watch mode, IDE integration, history diff, and workspace policy",
+    "new detector categories"
+  ]
+}

@@ -2,6 +2,18 @@
 
 書き込み専用。事故復旧のための記録で、普段は読み返さない。
 
+## 2026-08-23 — 無料CLIの製品境界を固定
+
+- 公開済み0.2.0の31ルールを保守基準として `product-boundary.json` に固定。CLIは無料・MITのターミナル/CI向け基礎チェックとし、新しい検出カテゴリ、指示本文解析、Git-aware判定、抑制・対処・IDEワークフローは有料JetBrains版へ限定する。
+- `test/product-boundary.js` を追加。実装のルールIDと長形式オプションが基準から増減していないこと、指示内容解析・認証ファイルへの`.gitignore`適用可否検査・`aiwg:ignore`抑制・finding単位の対処情報がCLIへ入っていないことを黒箱で検証する。
+- 独立監査で初版の単引用符抽出・unique集合比較・`.git`なしfixtureの抜けを確認。全引用符対応、rule property総数、重複ID、option literal総数、finding field完全一致、`.git`付き未保護`.env`、positional mode拒否へ強化し、動的ID・既存ID再利用・fix系フィールド・隠しwatch modeの偶発追加を検出する。
+- 動的IDの正規表現判定は空白のバックトラックで2回失敗したため捨て、`id:`/`ruleId:`各代入行の右辺を直接分類する方式へ切替。現在許可する動的式は、8つの`SECRET_RULES`をfindingへ渡す`rule.id`だけ。複数行代入は見逃さずテスト失敗になる。
+- 再監査でインラインproperty、別構文のoption、カテゴリ別finding fieldの抜けを確認。全CLIソースと`parseArgs`のSHA-256固定、インライン/空白入りpropertyの自己試験、`switch`/逆順比較のoption自己試験、既存fixture30ルールと専用MCP fixtureを合わせた全31ルールのfield完全一致へ強化した。manifest更新だけを意図的なレビューescape hatchとして残す。
+- 続く再監査で別binへの入口差替えを確認し、`package.json`全体hash、npm bin mapping、`package.files`、bin配下の再帰ファイル集合も固定。link・特殊entryを拒否し、実行物が境界検査済みの1ファイルだけであることを保証する。最終独立監査はHIGH/MEDIUM/LOWすべて0件。
+- `npm test` とpublish前の `prepack` で境界テストを実行する。CLIはCommonJSのためanti-slop Oxlintプラグインの導入対象外だが、追加コードは同規約に従った。
+- 最終検証: `npm test` は既存36チェックと境界テストを通過し、31ルール・長形式option 5個を確認。`npm pack --dry-run --json`はprepackを再実行して通過し、LICENSE / README / CLI本体 / package.json / 境界manifestの5ファイルだけを収録。`git diff --check`も通過。
+- READMEを「無料CLI=一回実行する基礎検査」「有料版=IDE内の判断・解決ワークフロー」へ統一。公開済み機能は削らず、0.2.1は既存ルールのschema追従と証拠マスク強化として保守範囲内に据え置く。
+
 ## 2026-08-23 — 0.2.1（未公開）— 現行HTTP hook構造の検出
 
 - CLI特化の記事作成時に README と 0.2.0 実装を再照合し、出力例が旧版 `0.1.0` のまま、証拠マスクが「先頭4＋末尾4」と誤記されている2件を確認。出力例は今回のpatch版 `0.2.1` へ更新し、マスク説明は実装どおり先頭4文字以外をアスタリスクへ置換する内容に修正。

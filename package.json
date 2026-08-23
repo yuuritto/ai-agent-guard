@@ -7,13 +7,15 @@
   },
   "type": "commonjs",
   "scripts": {
-    "test": "node test/run.js",
+    "test": "node test/run.js && node test/product-boundary.js",
+    "prepack": "npm test",
     "selftest": "node bin/ai-agent-guard.js --path bin"
   },
   "files": [
     "bin",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "product-boundary.json"
   ],
   "keywords": [
     "security",
