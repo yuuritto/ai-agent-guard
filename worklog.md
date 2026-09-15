@@ -2,6 +2,15 @@
 
 書き込み専用。事故復旧のための記録で、普段は読み返さない。
 
+## 2026-09-16 — 有料版への導線を実行結果に追加（0.2.2 公開）
+
+- 根拠: 収益導線の実測で、無料CLIは npm の直近1か月が 268 DL、有料プラグインは今月 32 DL。それなのに CLI の実行結果には有料版への案内が1行も無かった（READMEにはある）。
+- 変更: `printReport` の末尾に2行追加。`--json` の出力には入れない（機械可読を保つ）。
+- 境界契約: `product-boundary.json` の policyRevision を 2026-09-16、publishedBaseline を 0.2.2 に更新し、`cliSourceSha256` と `packageManifestSha256` を再計算。検出器カタログ・オプション面・finding のフィールドは変更なし。
+- 検証: `npm test` 全通過（product boundary passed: 31 rules, 5 long options）。fixture 実行で末尾2行を確認し、`--json` は version 0.2.2 の純JSONのままを確認。
+- 公開: `npm publish --access public` で 0.2.2 を公開。レジストリの tarball（12,190 bytes、5ファイル）を取得し、`package/bin/ai-agent-guard.js` に導線の行が入っていることを確認。
+- 注意: 保存時に `detect-plaintext-secrets.sh` が87行目（秘密鍵を探す正規表現、製品自身のルール定義）を平文秘密と誤検知した。検出器の定義なので残している。
+
 ## 2026-08-23 — 無料CLIの製品境界を固定
 
 - 公開済み0.2.0の31ルールを保守基準として `product-boundary.json` に固定。CLIは無料・MITのターミナル/CI向け基礎チェックとし、新しい検出カテゴリ、指示本文解析、Git-aware判定、抑制・対処・IDEワークフローは有料JetBrains版へ限定する。

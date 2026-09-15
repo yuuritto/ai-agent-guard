@@ -727,6 +727,9 @@ function printReport(findings, counters, root) {
     color('LOW', `${bySev.LOW} low`)
   );
   out.push('');
+  out.push(`  ${color('dim', 'Review these findings in the IDE with navigation and fixes:')}`);
+  out.push(`  ${color('cyan', 'https://plugins.jetbrains.com/plugin/32116')} ${color('dim', '(30-day trial)')}`);
+  out.push('');
   process.stdout.write(out.join('\n') + '\n');
 }
 
