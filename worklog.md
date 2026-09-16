@@ -8,7 +8,7 @@
 - 変更: `printReport` 末尾の2行を4行にし、製品名・有料であること・30日試用・再起動と Evaluate for free の3手順・URLを書く。`--json` の出力は変更しない。README の「CLI vs. paid JetBrains plugin」にも同じ手順を1文追加。
 - 境界契約: `cliSourceSha256`（bddff738→52ef4e78）と `packageManifestSha256` を再計算。検出器カタログ31ルール・長形式オプション5個・finding のフィールドは変更なし。`publishedBaseline` は公開済みの 0.2.2 のまま（0.2.3 は未公開）。
 - 検証: `npm test` 全通過（product boundary passed: 31 rules, 5 long options）。`npm pack --dry-run` は5ファイル・12.3 kB。fixture 実行で新しい末尾4行を確認。
-- 状態: **未公開**。公開はユーザーの許可待ち（`npm publish --access public` の1コマンド）。
+- 状態: **2026-09-16 に `npm publish --access public` で 0.2.3 を公開した**。レジストリの latest が 0.2.3、shasum は手元の梱包と一致（97d5ee76…）。公開 tarball（5ファイル）を展開し、`--version` が 0.2.3、末尾の導線4行と README の試用1文が入っていることを確認した。`publishedBaseline` を 0.2.3 に更新済み。
 - 注意: 保存時に `detect-plaintext-secrets.sh` が87行目の検出器定義（秘密鍵を探す正規表現）を平文秘密と誤検知した。0.2.2 のときと同じ誤検知で、検出器の定義なので残している。
 
 ## 2026-09-16 — 有料版への導線を実行結果に追加（0.2.2 公開）

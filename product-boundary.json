@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "policyRevision": "2026-09-16",
-  "publishedBaseline": "0.2.2",
+  "publishedBaseline": "0.2.3",
   "role": "Free MIT terminal and CI preflight with a frozen detector catalog",
   "expectedSecretRulePropertyCount": 8,
   "expectedFindingRulePropertyCount": 24,
