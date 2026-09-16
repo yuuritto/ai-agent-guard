@@ -728,7 +728,9 @@ function printReport(findings, counters, root) {
   );
   out.push('');
   out.push(`  ${color('dim', 'Review these findings in the IDE with navigation and fixes:')}`);
-  out.push(`  ${color('cyan', 'https://plugins.jetbrains.com/plugin/32116')} ${color('dim', '(30-day trial)')}`);
+  out.push(`  ${color('dim', 'AI Agent Workspace Guard, a paid JetBrains plugin with a 30-day trial.')}`);
+  out.push(`  ${color('dim', 'Install it, restart the IDE, then choose "Evaluate for free".')}`);
+  out.push(`  ${color('cyan', 'https://plugins.jetbrains.com/plugin/32116')}`);
   out.push('');
   process.stdout.write(out.join('\n') + '\n');
 }

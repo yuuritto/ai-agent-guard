@@ -86,7 +86,7 @@ Use this free CLI for a portable one-shot terminal or CI check. Use the paid **A
 
 Run the IDE plugin from `Tools → Scan AI Agent Workspace`. Its results appear in a tool window grouped by severity, with line navigation, evidence and remediation guidance, a severity filter, and Markdown export. Known false positives can be silenced with an `aiwg:ignore` comment, and suppressed findings stay in the count.
 
-The JetBrains plugin is a separate paid product with a 30-day trial. It is not this rule set with a graphical wrapper.
+The JetBrains plugin is a separate paid product with a 30-day trial. It is not this rule set with a graphical wrapper. Install it from the page below, restart the IDE, then choose **Evaluate for free** in the license dialog to start the trial.
 
 ➡️ https://plugins.jetbrains.com/plugin/32116-ai-agent-workspace-guard
 

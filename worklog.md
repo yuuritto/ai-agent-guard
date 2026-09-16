@@ -2,6 +2,15 @@
 
 書き込み専用。事故復旧のための記録で、普段は読み返さない。
 
+## 2026-09-16 — 試用開始の手順まで導線に書き足す（0.2.3 準備・未公開）
+
+- 根拠: 有料プラグインの公式手順（How to buy a plugin license・2026-09-16 取得）は「有償プラグインはインストール後に IDE を再起動しないと無効化される」「試用はライセンス画面の Evaluate for free で開始する」と明記している。0.2.2 の導線はURLと「30-day trial」だけで、有料であることと開始手順が伝わらなかった。
+- 変更: `printReport` 末尾の2行を4行にし、製品名・有料であること・30日試用・再起動と Evaluate for free の3手順・URLを書く。`--json` の出力は変更しない。README の「CLI vs. paid JetBrains plugin」にも同じ手順を1文追加。
+- 境界契約: `cliSourceSha256`（bddff738→52ef4e78）と `packageManifestSha256` を再計算。検出器カタログ31ルール・長形式オプション5個・finding のフィールドは変更なし。`publishedBaseline` は公開済みの 0.2.2 のまま（0.2.3 は未公開）。
+- 検証: `npm test` 全通過（product boundary passed: 31 rules, 5 long options）。`npm pack --dry-run` は5ファイル・12.3 kB。fixture 実行で新しい末尾4行を確認。
+- 状態: **未公開**。公開はユーザーの許可待ち（`npm publish --access public` の1コマンド）。
+- 注意: 保存時に `detect-plaintext-secrets.sh` が87行目の検出器定義（秘密鍵を探す正規表現）を平文秘密と誤検知した。0.2.2 のときと同じ誤検知で、検出器の定義なので残している。
+
 ## 2026-09-16 — 有料版への導線を実行結果に追加（0.2.2 公開）
 
 - 根拠: 収益導線の実測で、無料CLIは npm の直近1か月が 268 DL、有料プラグインは今月 32 DL。それなのに CLI の実行結果には有料版への案内が1行も無かった（READMEにはある）。

@@ -7,7 +7,7 @@
   "expectedFindingRulePropertyCount": 24,
   "expectedOptionBranchCount": 8,
   "expectedLongOptionLiteralCount": 6,
-  "packageManifestSha256": "1beaeba69bfa9786488b16cf2fbc864f0d969c2399e75b928420e366fcb711c6",
+  "packageManifestSha256": "d547ff0f885f51aa841b56456f4742640b57af7016fd712a1f39318c3e113979",
   "allowedBinEntrypoints": {
     "ai-agent-guard": "bin/ai-agent-guard.js"
   },
@@ -20,7 +20,7 @@
   "allowedBinFiles": [
     "bin/ai-agent-guard.js"
   ],
-  "cliSourceSha256": "bddff7381b6ad5d9532fb10933c58088f89e913de3a852e0b17a72e9df1a9f05",
+  "cliSourceSha256": "52ef4e7822f25a960d923a9c220bef29a3a554c7394fd6a7fd8c13c58283360c",
   "parseArgsSha256": "6f5d95e0beb0f9ce11f02d7afe1a40b9143914151fb23497df40d3c1d8e2cca1",
   "allowedParseArgsStringLiterals": [
     "-",
