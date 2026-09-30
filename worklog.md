@@ -2,6 +2,11 @@
 
 書き込み専用。事故復旧のための記録で、普段は読み返さない。
 
+## 2026-09-30（夜）npm 0.2.4 の公開を試行
+
+- 本人が `npm login`。whoami=entet（パッケージの maintainer と一致）。`npm publish` は prepack のテスト通過後 E403「2FA か bypass 2FA の granular token が必要」。npm profile の tfa=false。2FA 有効化は本人の操作。
+- GitHub への push は ~/.claude/git-hooks/pre-push が公開リポジトリを常に拒否（本人が --no-verify で実行する設計）。未送信。
+
 ## 2026-09-30（夜）公開の指示「公開しろ」
 
 - プラグイン: optional=true の ZIP は upload API が 400「You cannot change the pricing model」。有料から一部無料への切り替えは JetBrains 側の変更が要る（管理画面に項目なし）。伏せ字の修正を待たせないため、optional=false・有料の文面に戻した 2026.1.6 を 63c56f7 で作り、提出して 201（update id 1183303、approve=false で審査待ち）。一部無料化は 63c56f7 を戻せば再開できる。
