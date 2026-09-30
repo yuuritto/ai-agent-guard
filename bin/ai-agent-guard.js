@@ -132,10 +132,13 @@ function isBinary(buf) {
   return false;
 }
 
-function scanSecrets(relPath, lines, findings) {
+function scanSecrets(relPath, lines, findings, coverage) {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    if (line.length > 4000) continue;
+    if (line.length > 4000) {
+      coverage.longLines++;
+      continue;
+    }
     for (const rule of SECRET_RULES) {
       const m = rule.regex.exec(line);
       if (!m) continue;
@@ -583,9 +586,11 @@ function scanFile(absPath, relPath, findings, counters) {
     buf = fs.readFileSync(absPath);
   } catch {
     counters.skipped++;
+    counters.coverage.unreadableFiles++;
     return;
   }
   if (isBinary(buf)) {
+    counters.coverage.binaryFiles++;
     counters.skipped++;
     return;
   }
@@ -596,7 +601,7 @@ function scanFile(absPath, relPath, findings, counters) {
 
   counters.scanned++;
 
-  scanSecrets(relPath, lines, findings);
+  scanSecrets(relPath, lines, findings, counters.coverage);
 
   let jsonData;
   if (lowerBase.endsWith('.json')) {
@@ -640,15 +645,22 @@ function walk(root, findings, counters) {
     try {
       entries = fs.readdirSync(dir, { withFileTypes: true });
     } catch {
+      counters.coverage.unreadableDirectories++;
       continue;
     }
     for (const ent of entries) {
       const abs = path.join(dir, ent.name);
-      if (ent.isSymbolicLink()) continue;
+      if (ent.isSymbolicLink()) {
+        counters.coverage.symbolicLinks++;
+        continue;
+      }
       const isDir = ent.isDirectory();
       const isFile = ent.isFile();
       if (isDir) {
-        if (SKIP_DIRS.has(ent.name)) continue;
+        if (SKIP_DIRS.has(ent.name)) {
+          counters.coverage.excludedDirectories++;
+          continue;
+        }
         stack.push(abs);
         continue;
       }
@@ -657,10 +669,12 @@ function walk(root, findings, counters) {
       try {
         stats = fs.statSync(abs);
       } catch {
+        counters.coverage.unreadableFiles++;
         counters.skipped++;
         continue;
       }
       if (stats.size > MAX_FILE_SIZE) {
+        counters.coverage.oversizedFiles++;
         counters.skipped++;
         continue;
       }
@@ -691,7 +705,7 @@ function sortFindings(findings) {
   });
 }
 
-function printReport(findings, counters, root) {
+function printReport(findings, counters, root, scanComplete) {
   const out = [];
   out.push('');
   out.push(color('bold', '  AI Agent Guard') + color('dim', `  v${VERSION}`));
@@ -699,7 +713,9 @@ function printReport(findings, counters, root) {
   out.push('');
 
   if (findings.length === 0) {
-    out.push('  ' + color('green', '✓ No issues found'));
+    out.push('  ' + (scanComplete
+      ? color('green', '✓ No issues found within scan scope')
+      : color('HIGH', 'Scan incomplete: no issues found in scanned content')));
   } else {
     let lastSeverity = null;
     for (const f of findings) {
@@ -715,10 +731,17 @@ function printReport(findings, counters, root) {
     }
   }
 
+  if (!scanComplete && findings.length > 0) {
+    out.push('  ' + color('HIGH', 'Scan incomplete: additional issues may be unexamined'));
+  }
   out.push('');
   out.push(color('dim', '  ' + '─'.repeat(48)));
   const bySev = countBySeverity(findings);
   out.push(`  files scanned: ${counters.scanned}    skipped: ${counters.skipped}`);
+  const coverageSummary = Object.entries(counters.coverage)
+    .filter(([, count]) => count > 0)
+    .map(([reason, count]) => `${reason}=${count}`).join('  ');
+  if (coverageSummary) out.push('  coverage: ' + coverageSummary);
   out.push(
     `  findings: ` +
     color('CRITICAL', `${bySev.CRITICAL} critical`) + '  ' +
@@ -755,7 +778,8 @@ Checks: leaked secrets, risky MCP configs, AI instruction files,
 GitHub Actions misconfig, dangerous package.json scripts, n8n workflows.
 
 Private by design: runs locally, no network calls, no telemetry.
-Exit code: 0 = clean, 1 = findings.
+Exit code: 0 = no findings, 1 = findings, 2 = invalid scan path.
+Coverage limits are reported separately; --json includes scanComplete.
 `);
 }
 
@@ -777,8 +801,8 @@ function parseArgs(argv) {
 function main() {
   const opts = parseArgs(process.argv.slice(2));
   if (opts.noColor) useColor = false;
-  if (opts.help) { printHelp(); process.exit(0); }
-  if (opts.version) { process.stdout.write(VERSION + '\n'); process.exit(0); }
+  if (opts.help) { printHelp(); return; }
+  if (opts.version) { process.stdout.write(VERSION + '\n'); return; }
 
   const root = path.resolve(opts.path);
   let st;
@@ -786,16 +810,34 @@ function main() {
     st = fs.statSync(root);
   } catch {
     process.stderr.write(`error: path not found: ${root}\n`);
-    process.exit(2);
+    process.exitCode = 2;
+    return;
   }
   if (!st.isDirectory()) {
     process.stderr.write(`error: not a directory: ${root}\n`);
-    process.exit(2);
+    process.exitCode = 2;
+    return;
   }
 
   const findings = [];
-  const counters = { scanned: 0, skipped: 0 };
+  const counters = {
+    scanned: 0,
+    skipped: 0,
+    coverage: {
+      unreadableDirectories: 0,
+      unreadableFiles: 0,
+      oversizedFiles: 0,
+      longLines: 0,
+      excludedDirectories: 0,
+      symbolicLinks: 0,
+      binaryFiles: 0,
+    },
+  };
   walk(root, findings, counters);
+  const coverage = counters.coverage;
+  const scanComplete = coverage.unreadableDirectories === 0 &&
+    coverage.unreadableFiles === 0 && coverage.oversizedFiles === 0 &&
+    coverage.longLines === 0;
 
   const deduped = sortFindings(dedupe(sanitizeFindingEvidence(findings)));
 
@@ -805,14 +847,16 @@ function main() {
       scannedPath: root,
       filesScanned: counters.scanned,
       filesSkipped: counters.skipped,
+      scanComplete,
+      coverage,
       summary: countBySeverity(deduped),
       findings: deduped,
     }, null, 2) + '\n');
   } else {
-    printReport(deduped, counters, root);
+    printReport(deduped, counters, root, scanComplete);
   }
 
-  process.exit(deduped.length > 0 ? 1 : 0);
+  process.exitCode = deduped.length > 0 ? 1 : 0;
 }
 
 main();
