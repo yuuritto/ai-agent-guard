@@ -111,7 +111,11 @@ function sanitizeEvidence(value) {
       (match) => mask(match),
     );
   }
-  return sanitized;
+  // Other rules can quote entire lines, including assignments outside the detector catalog.
+  return sanitized.replace(
+    /\b[\w.-]*(?:api[_-]?key|secret|token|passwd|password|pwd|credential|private[_-]?key)[\w.-]*["']?\s*[:=]\s*(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|[^\s;|&]+)/gi,
+    (match) => mask(match),
+  );
 }
 
 function sanitizeFindingEvidence(findings) {

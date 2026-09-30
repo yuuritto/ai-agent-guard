@@ -105,6 +105,35 @@ try {
       crossRuleEvidence.includes('*') &&
       !crossRuleEvidence.includes(crossRuleValue),
   );
+  for (const assignment of [
+    `SERVICE_TOKEN=${crossRuleValue}`,
+    `token=${crossRuleValue}`,
+    `api_key=${crossRuleValue}`,
+    `client-secret=${crossRuleValue}`,
+    `TOKEN_SUFFIX="${crossRuleValue}"`,
+    `SERVICE_TOKEN="words before ${crossRuleValue}"`,
+    `SERVICE_TOKEN='words before ${crossRuleValue}'`,
+    `SERVICE_TOKEN="escaped \\"quote\\" before ${crossRuleValue}"`,
+    `"SERVICE_TOKEN": "${crossRuleValue}"`,
+    `private_key='${crossRuleValue}'`,
+    `PASSWORD=${crossRuleValue}; OTHER_SECRET=${crossRuleValue}`,
+    `DB_PWD=${crossRuleValue}`,
+    `AWS_CREDENTIALS=${crossRuleValue}`,
+    `app.secret=${crossRuleValue}`,
+  ]) {
+    fs.writeFileSync(path.join(crossRuleDir, 'run.sh'),
+      `claude --dangerously-skip-permissions MODE=preview ${assignment}\n`);
+    for (const format of [[], ['--json']]) {
+      const result = run([...format, '--path', crossRuleDir]);
+      check('sensitive assignments are masked in ' + (format.length ? 'JSON' : 'text'),
+        result.status === 1 && !result.stdout.includes(crossRuleValue) &&
+          result.stdout.includes('MODE=preview'));
+    }
+  }
+  const shortValue = 'Qv7x2k';
+  fs.writeFileSync(path.join(crossRuleDir, 'run.sh'),
+    `claude --dangerously-skip-permissions API_TOKEN=${shortValue}\n`);
+  check('short sensitive values are masked', !run(['--json', '--path', crossRuleDir]).stdout.includes(shortValue));
 } finally {
   fs.rmSync(crossRuleDir, { recursive: true, force: true });
 }
