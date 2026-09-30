@@ -2,6 +2,11 @@
 
 書き込み専用。事故復旧のための記録で、普段は読み返さない。
 
+## 2026-09-30（夜）npm 0.2.4 公開を確認
+
+- 公開時検査のあと latest=0.2.4（shasum c8591124 は手元の梱包と一致、gitHead f62f7d7）。`npx -p @entet/ai-agent-guard@0.2.4 ai-agent-guard --version` が 0.2.4。publishedBaseline を 0.2.4 に更新（84407b6）。
+- 残り: GitHub への push（本人の --no-verify 実行）と PR #2 を閉じる作業。
+
 ## 2026-09-30（夜）npm 0.2.4 の公開
 
 - `!` からの publish は Windows Hello の web 認証を開けず EOTP。本人が通常のターミナルで `npm publish` を実行し、web 認証後の PUT が 202・exit 0。
