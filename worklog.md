@@ -2,6 +2,11 @@
 
 書き込み専用。事故復旧のための記録で、普段は読み返さない。
 
+## 2026-09-30（夜）GitHub への push
+
+- 本人が `--no-verify` で push（047b656..065ce67）。fetch 後に master と origin/master が 065ce67 で一致。npm 0.2.4 の gitHead f62f7d7 は GitHub から辿れる。
+- PR #2 の close は publication guard が止めた。中身は daef8ed として master に入っている。
+
 ## 2026-09-30（夜）npm 0.2.4 公開を確認
 
 - 公開時検査のあと latest=0.2.4（shasum c8591124 は手元の梱包と一致、gitHead f62f7d7）。`npx -p @entet/ai-agent-guard@0.2.4 ai-agent-guard --version` が 0.2.4。publishedBaseline を 0.2.4 に更新（84407b6）。
