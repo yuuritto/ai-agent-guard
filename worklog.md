@@ -2,6 +2,12 @@
 
 書き込み専用。事故復旧のための記録で、普段は読み返さない。
 
+## 2026-09-30（夜）公開の指示「公開しろ」
+
+- プラグイン: optional=true の ZIP は upload API が 400「You cannot change the pricing model」。有料から一部無料への切り替えは JetBrains 側の変更が要る（管理画面に項目なし）。伏せ字の修正を待たせないため、optional=false・有料の文面に戻した 2026.1.6 を 63c56f7 で作り、提出して 201（update id 1183303、approve=false で審査待ち）。一部無料化は 63c56f7 を戻せば再開できる。
+- CLI: 0.2.4 に上げて packageManifestSha256 を再計算（19ab1a2）、npm test 全通過。origin/master から早送りで送れる。公開リポジトリへの push は publication guard が止めた（本人の発言に操作と対象の名指しが要る）。npm は公開トークン失効中。
+- 本人に依頼: 「ai-agent-guard を GitHub に push して」の指示、`! npm login`、JetBrains への一部無料化の申請メール（報告HTMLに文面）。
+
 ## 2026-09-30（夜）Guard の伏せ字修正の統合（手元のみ・未送信・未公開）
 
 - CLI: 控え `backup/pre-integration-20260930` を作成。origin/master（PR #1）を合流 7e5b104、重複した 91a8767 を打ち消し 4d7f7a6、PR #2（edcda44）を載せて pwd・credential を追加 daef8ed。有料版への案内と 0.2.3 の記録は保持。PR #1 の「大量出力の最後まで出る」テストは、案内が最後に出るので最終行の判定を案内のURLに合わせた（判定の強さは同じ）。境界契約のハッシュは最終コードで再計算。npm test 全通過。
