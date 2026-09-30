@@ -49,10 +49,37 @@ npx @entet/ai-agent-guard --json
 npx @entet/ai-agent-guard --no-color
 ```
 
-Exit code is `0` when clean and `1` when there are findings, so it drops straight into CI:
+Exit code is `0` when no findings were detected, `1` when there are findings, and `2` for an invalid scan path. Existing exit codes are unchanged; incomplete scans are reported separately:
 
 ```yaml
 - run: npx @entet/ai-agent-guard
+```
+
+### Scan coverage
+
+JSON includes `scanComplete` and `coverage` counts. An unreadable directory or file,
+a file larger than 512 KiB, or a line longer than 4,000 characters makes
+`scanComplete` false. Long lines are skipped by secret matching; other applicable
+file checks still run. `filesSkipped` remains the number of skipped files and does
+not include unreadable directories or partially scanned lines.
+
+Coverage is relative to the scanner's scope, not a guarantee that a project is safe.
+Binary files (a NUL byte in the first 4,096 bytes), symbolic links, and these excluded
+directories are counted separately and do not make `scanComplete` false:
+`.git`, `node_modules`, `.venv`, `venv`, `dist`, `build`, `.next`, `.nuxt`, `coverage`,
+`target`, `out`, `.turbo`, `.cache`. Excluded directories are not traversed, so their
+contents are not counted. JSON config checks require parseable JSON.
+
+For CI that must reject incomplete scans, use the JSON result as well as the exit
+code (Bash example using this checkout; these coverage fields are not yet in npm 0.2.3):
+
+```bash
+status=0
+node bin/ai-agent-guard.js --json > guard-report.json || status=$?
+node -e 'const r=require("./guard-report.json"); if(r.scanComplete !== true) process.exit(2)'
+coverage_status=$?
+if [ "$status" -ne 0 ]; then exit "$status"; fi
+exit "$coverage_status"
 ```
 
 Example output:

@@ -46,5 +46,5 @@ jobs:
           node bin/ai-agent-guard.js --json --path test/fixtures/vulnerable > out.json || true
           node -e "const r=require('./out.json'); if(!(r.findings.length>0)) {console.error('no findings in json'); process.exit(1)} console.log('json ok:', r.findings.length, 'findings')"
 
-      - name: Run rule tests
-        run: node test/run.js
+      - name: Run full test suite
+        run: npm test

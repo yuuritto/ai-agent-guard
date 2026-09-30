@@ -1,24 +1,27 @@
 'use strict';
 
-const { execFileSync } = require('child_process');
+const { spawnSync } = require('child_process');
+const assert = require('assert');
+const vm = require('vm');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
 const CLI = path.join(__dirname, '..', 'bin', 'ai-agent-guard.js');
 
+function run(args) {
+  const result = spawnSync(process.execPath, [CLI, ...args], {
+    encoding: 'utf8', timeout: 10000, maxBuffer: 8 * 1024 * 1024,
+  });
+  assert.ifError(result.error);
+  assert.strictEqual(result.signal, null);
+  return result;
+}
+
 function scan(dir) {
-  let stdout = '';
-  let code = 0;
-  try {
-    stdout = execFileSync(process.execPath, [CLI, '--json', '--path', dir], {
-      encoding: 'utf8',
-    });
-  } catch (e) {
-    stdout = e.stdout ? e.stdout.toString() : '';
-    code = e.status == null ? 1 : e.status;
-  }
-  return { report: JSON.parse(stdout), code };
+  const result = run(['--json', '--path', dir]);
+  assert.strictEqual(result.stderr, '');
+  return { report: JSON.parse(result.stdout), code: result.status };
 }
 
 let failures = 0;
@@ -110,6 +113,77 @@ try {
 console.log('clean fixture:');
 check('exit code 0', clean.code === 0);
 check('no findings', clean.report.findings.length === 0);
+
+check('clean scan is complete', clean.report.scanComplete === true);
+
+const coverageDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ai-agent-guard-coverage-'));
+try {
+  const largeOutputFile = path.join(coverageDir, 'many.txt');
+  fs.writeFileSync(largeOutputFile, ('AKIA' + 'Z'.repeat(16) + '\n').repeat(2000));
+  const large = scan(coverageDir);
+  check('large piped JSON is complete', large.code === 1 &&
+    large.report.findings.length === 2000 && large.report.findings.at(-1).line === 2000);
+  const largeText = run(['--path', coverageDir]).stdout;
+  // The plugin guidance is the last block of the text report, after the severity totals.
+  check('large piped text is complete', largeText.includes('0 low\n') &&
+    largeText.endsWith('https://plugins.jetbrains.com/plugin/32116\n\n'));
+  fs.unlinkSync(largeOutputFile);
+
+  fs.writeFileSync(path.join(coverageDir, 'long.txt'), 'x'.repeat(4001));
+  fs.writeFileSync(path.join(coverageDir, 'large.txt'), 'x'.repeat(512 * 1024 + 1));
+  const incomplete = scan(coverageDir);
+  check('incomplete scan preserves exit code and counts limits', incomplete.code === 0 &&
+    incomplete.report.scanComplete === false && incomplete.report.coverage.longLines === 1 &&
+    incomplete.report.coverage.oversizedFiles === 1 && incomplete.report.filesSkipped === 1);
+  const text = run(['--path', coverageDir]).stdout;
+  check('incomplete text does not claim a clean scan', text.includes('Scan incomplete') &&
+    !text.includes('✓ No issues found'));
+  fs.writeFileSync(path.join(coverageDir, 'finding.txt'), 'AKIA' + 'Z'.repeat(16));
+  check('incomplete scan with findings keeps exit 1', scan(coverageDir).code === 1);
+  check('findings report also warns about incomplete coverage',
+    run(['--path', coverageDir]).stdout.includes('Scan incomplete'));
+  for (const file of fs.readdirSync(coverageDir)) fs.unlinkSync(path.join(coverageDir, file));
+
+  fs.writeFileSync(path.join(coverageDir, 'boundary.txt'), 'x'.repeat(4000));
+  fs.writeFileSync(path.join(coverageDir, 'binary.bin'), Buffer.from([0, 1, 2]));
+  fs.mkdirSync(path.join(coverageDir, 'node_modules'));
+  fs.writeFileSync(path.join(coverageDir, 'node_modules', 'ignored.txt'), 'x'.repeat(4001));
+  const scoped = scan(coverageDir);
+  check('scope exclusions are counted separately from incomplete coverage',
+    scoped.report.scanComplete && scoped.report.coverage.binaryFiles === 1 &&
+    scoped.report.coverage.excludedDirectories === 1 && scoped.report.coverage.longLines === 0);
+
+  // Inject filesystem failures so these checks also work as root and on Windows.
+  const source = fs.readFileSync(CLI, 'utf8');
+  for (const [method, counter] of [
+    ['readdirSync', 'unreadableDirectories'],
+    ['statSync', 'unreadableFiles'],
+    ['readFileSync', 'unreadableFiles'],
+  ]) {
+    let output = '';
+    const failingFs = { ...fs, [method](target, ...args) {
+      if (method !== 'statSync' || target !== coverageDir) throw new Error('unreadable');
+      return fs[method](target, ...args);
+    } };
+    const fakeProcess = {
+      argv: [process.execPath, CLI, '--json', '--path', coverageDir], env: {},
+      stdout: { write: (text) => { output += text; } },
+      stderr: { write: () => assert.fail('unexpected stderr') },
+    };
+    vm.runInNewContext(source, {
+      require: (name) => name === 'fs' ? failingFs : name === '../package.json'
+        ? require('../package.json') : require(name),
+      process: fakeProcess,
+    });
+    const report = JSON.parse(output);
+    check(method + ' failures are reported', !report.scanComplete && report.coverage[counter] > 0);
+  }
+  check('invalid scan path exits 2', run(['--path', path.join(coverageDir, 'missing')]).status === 2);
+  check('non-directory scan path exits 2', run(['--path', path.join(coverageDir, 'boundary.txt')]).status === 2);
+  check('help and version exit successfully', run(['--help']).status === 0 && run(['--version']).status === 0);
+} finally {
+  fs.rmSync(coverageDir, { recursive: true, force: true });
+}
 
 console.log('');
 if (failures > 0) {
