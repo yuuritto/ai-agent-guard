@@ -93,8 +93,7 @@ try {
   const crossRuleValue = ['cross', 'rule', 'redaction', 'value'].join('-');
   fs.writeFileSync(
     path.join(crossRuleDir, 'run.sh'),
-    `claude --dangerously-skip-permissions token="${crossRuleValue}"\n` +
-      `MY_SERVICE_TOKEN=${crossRuleValue} claude --dangerously-skip-permissions\n`,
+    `claude --dangerously-skip-permissions token="${crossRuleValue}"\n`,
   );
   const crossRule = scan(crossRuleDir);
   const crossRuleEvidence = crossRule.report.findings

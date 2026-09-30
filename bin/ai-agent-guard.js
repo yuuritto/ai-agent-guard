@@ -100,12 +100,6 @@ const SECRET_RULES = [
   },
 ];
 
-// Any key whose name contains a secret word, quoted or not (MY_SERVICE_TOKEN=..., "db_password": "...").
-// SECRET_RULES only mask known key shapes and quoted assignments, and a raw line such as a
-// skip-permissions command can carry an unquoted credential next to the flag.
-const SECRET_NAMED_ASSIGNMENT =
-  /([A-Za-z0-9_-]*(?:password|passwd|pwd|token|secret|api[_-]?key|private[_-]?key|credential)[A-Za-z0-9_-]*["']?\s*[:=]\s*["']?)([^"'\s,}]{8,})/gi;
-
 function sanitizeEvidence(value) {
   let sanitized = String(value);
   for (const rule of SECRET_RULES) {
@@ -117,7 +111,7 @@ function sanitizeEvidence(value) {
       (match) => mask(match),
     );
   }
-  return sanitized.replace(SECRET_NAMED_ASSIGNMENT, (match, key, secret) => key + mask(secret));
+  return sanitized;
 }
 
 function sanitizeFindingEvidence(findings) {
