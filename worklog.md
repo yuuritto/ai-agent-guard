@@ -2,6 +2,12 @@
 
 書き込み専用。事故復旧のための記録で、普段は読み返さない。
 
+## 2026-09-30（夜）npm 0.2.4 の公開
+
+- `!` からの publish は Windows Hello の web 認証を開けず EOTP。本人が通常のターミナルで `npm publish` を実行し、web 認証後の PUT が 202・exit 0。
+- 202 は npm の公開時マルウェア検査待ち（2026-07 から、通常5分・混雑時15分以上。GitHub Changelog 2026-07-28）。`npm stage list`（npm 12 を npx で使用）では段階公開の保留はなし。10分後も latest は 0.2.3 のため、さらに30分監視中。
+- 公開を確認したら publishedBaseline を 0.2.4 に更新する。GitHub への push（本人の --no-verify 実行）は未実施で、master は origin より14件先行。
+
 ## 2026-09-30（夜）npm 0.2.4 の公開を試行
 
 - 本人が `npm login`。whoami=entet（パッケージの maintainer と一致）。`npm publish` は prepack のテスト通過後 E403「2FA か bypass 2FA の granular token が必要」。npm profile の tfa=false。2FA 有効化は本人の操作。
