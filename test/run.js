@@ -130,6 +130,17 @@ try {
           result.stdout.includes('MODE=preview'));
     }
   }
+  // Evidence is cut to 180 characters; the closing quote may land before, on, or after the cut.
+  const linePrefix = 'claude --dangerously-skip-permissions SERVICE_TOKEN="';
+  for (const closingQuoteAt of [170, 179, 180, 181, 400]) {
+    const longValue = 'dummy words '.repeat(40).slice(0, closingQuoteAt - linePrefix.length - 4) + 'TAIL';
+    fs.writeFileSync(path.join(crossRuleDir, 'run.sh'), `${linePrefix}${longValue}" MODE=preview\n`);
+    for (const format of [[], ['--json']]) {
+      const stdout = run([...format, '--path', crossRuleDir]).stdout;
+      check(`long quoted value closing at ${closingQuoteAt} is masked in ` + (format.length ? 'JSON' : 'text'),
+        !stdout.includes('dummy') && !stdout.includes('TAIL'));
+    }
+  }
   const shortValue = 'Qv7x2k';
   fs.writeFileSync(path.join(crossRuleDir, 'run.sh'),
     `claude --dangerously-skip-permissions API_TOKEN=${shortValue}\n`);

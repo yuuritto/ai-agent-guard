@@ -406,7 +406,8 @@ function scanSkipPermissions(relPath, lines, findings) {
         severity: 'CRITICAL',
         file: relPath,
         line: i + 1,
-        evidence: line.trim().slice(0, 180),
+        // Mask the whole line first: truncation can cut a quoted value before its closing quote.
+        evidence: sanitizeEvidence(line.trim()).slice(0, 180),
       });
     }
   });

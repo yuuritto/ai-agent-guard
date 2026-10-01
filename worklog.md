@@ -2,6 +2,12 @@
 
 書き込み専用。事故復旧のための記録で、普段は読み返さない。
 
+## 2026-10-01 skip-permissions の根拠を伏せてから切る
+
+- 再現: scanSkipPermissions が行を180文字で切ってから伏せていた。閉じる引用符が180文字目以降にある空白入りの値は、伏せ字が空白の手前で止まり残りが出た（ダミー値で text/JSON とも、180・181・200・400文字で漏れ。npm 0.2.4 と origin/master 065ce67 も同じ）。
+- 修正: `sanitizeEvidence(line.trim()).slice(0, 180)`。test/run.js に閉じる引用符が170/179/180/181/400文字の例を text/JSON で追加。cliSourceSha256 を更新（検出規則と起動オプションは不変）。`npm test` 通過。
+- 未送信・未公開。GitHub push と npm 0.2.5 は本人の許可待ち。
+
 ## 2026-09-30（夜）GitHub への push
 
 - 本人が `--no-verify` で push（047b656..065ce67）。fetch 後に master と origin/master が 065ce67 で一致。npm 0.2.4 の gitHead f62f7d7 は GitHub から辿れる。
