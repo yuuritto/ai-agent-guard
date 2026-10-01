@@ -7,6 +7,7 @@
 - 再現: scanSkipPermissions が行を180文字で切ってから伏せていた。閉じる引用符が180文字目以降にある空白入りの値は、伏せ字が空白の手前で止まり残りが出た（ダミー値で text/JSON とも、180・181・200・400文字で漏れ。npm 0.2.4 と origin/master 065ce67 も同じ）。
 - 修正: `sanitizeEvidence(line.trim()).slice(0, 180)`。test/run.js に閉じる引用符が170/179/180/181/400文字の例を text/JSON で追加。cliSourceSha256 を更新（検出規則と起動オプションは不変）。`npm test` 通過。
 - 未送信・未公開。GitHub push と npm 0.2.5 は本人の許可待ち。
+- 本人「すべてok」で push と 0.2.5 公開を許可。0.2.5 に上げ packageManifestSha256 を再計算（3c713cd）、npm test 全通過、梱包5ファイル。npm は未ログイン（whoami 失敗）。push（pre-push が公開リポジトリを拒否）と publish（Windows Hello の web 認証）は前回と同じく本人の通常ターミナルで実行してもらう。publishedBaseline は公開確認後に 0.2.5 へ。
 
 ## 2026-09-30（夜）GitHub への push
 
