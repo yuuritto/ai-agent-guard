@@ -171,11 +171,25 @@ try {
 
   // Repository strings must not reach the terminal as escape sequences (screen clear, OSC 52).
   fs.writeFileSync(path.join(crossRuleDir, '.mcp.json'), JSON.stringify({
-    mcpServers: { '\u001b[2J\u001b]52;c;ZWNobyBoaQ==\u0007fake': { command: 'npx', args: ['-y', 'some-server'] } },
+    mcpServers: { '\u001b[2J\u001b]52;c;ZWNobyBoaQ==\u0007fake‮': { command: 'npx', args: ['-y', 'some-server'] } },
   }));
   const escaped = run(['--path', crossRuleDir]).stdout;
   check('control characters from the repository are shown, not sent to the terminal',
-    escaped.includes('\\x1b[2J') && !escaped.includes('\u001b[2J') && !escaped.includes('\u0007'));
+    escaped.includes('\\u{001b}[2J') && !escaped.includes('\u001b[2J') && !escaped.includes('\u0007') &&
+      escaped.includes('\\u{202e}') && !escaped.includes('‮'));
+  fs.unlinkSync(path.join(crossRuleDir, '.mcp.json'));
+
+  // The bound on name length must not decide whether a value is masked, and a header with extra
+  // spaces is still a key the detector reports.
+  for (const line of [
+    `${'A'.repeat(100)}_TOKEN=${crossRuleValue}`,
+    `TOKEN_${'A'.repeat(100)}=${crossRuleValue}`,
+    `KEY="-----BEGIN  EC  ${keyLabel}\\n${crossRuleValue}"`,
+  ]) {
+    fs.writeFileSync(path.join(crossRuleDir, 'run.sh'), `claude --yolo MODE=preview ${line}\n`);
+    const stdout = run(['--json', '--path', crossRuleDir]).stdout;
+    check('long names and spaced key headers are masked', !stdout.includes(crossRuleValue) && stdout.includes('MODE=preview'));
+  }
 } finally {
   fs.rmSync(crossRuleDir, { recursive: true, force: true });
 }

@@ -20,7 +20,7 @@
   "allowedBinFiles": [
     "bin/ai-agent-guard.js"
   ],
-  "cliSourceSha256": "633ebe59105d31f38ade810667d792a931ea0eef854011245710d7a1c6edf402",
+  "cliSourceSha256": "71737debb5e7b882d6b5627dc12c239fbd5e818b742983cc1f09c659cb8fa2fd",
   "parseArgsSha256": "6f5d95e0beb0f9ce11f02d7afe1a40b9143914151fb23497df40d3c1d8e2cca1",
   "allowedParseArgsStringLiterals": [
     "-",

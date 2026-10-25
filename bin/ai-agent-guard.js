@@ -109,8 +109,9 @@ function sanitizeEvidence(value) {
   // The whole key block, not just its header: a one-line PEM ("\n"-escaped in .env or JSON)
   // carries the key body on the same line. Runs first because the private-key rule below masks
   // the header this needs to find.
+  // Same header grammar as the detector; [\s\S] because parsed JSON values can hold real newlines.
   let sanitized = String(value).slice(0, MASK_WINDOW).replace(
-    /-----BEGIN (?:[A-Z0-9]+ )*PRIVATE KEY-----(?:.*?-----END (?:[A-Z0-9]+ )*PRIVATE KEY-----|.*)/g,
+    /-----BEGIN(?:\s+[A-Z0-9]+)*\s+PRIVATE KEY-----(?:[\s\S]*?-----END(?:\s+[A-Z0-9]+)*\s+PRIVATE KEY-----|[\s\S]*)/g,
     (match) => mask(match),
   );
   for (const rule of SECRET_RULES) {
@@ -123,10 +124,12 @@ function sanitizeEvidence(value) {
     );
   }
   // Other rules can quote entire lines, including assignments outside the detector catalog.
-  // The name parts around the secret word are bounded: unbounded, a long line of secret words
-  // with no ':' or '=' backtracks in cubic time and the scan never finishes.
+  // Matching starts at the secret word and the rest of the name is taken atomically
+  // ((?=(...))\1, as JS has no possessive quantifier). The part of the name before the secret word
+  // stays as it is either way; matching it too made a long line of secret words with no ':' or '='
+  // backtrack in cubic time.
   return sanitized.replace(
-    /\b[\w.-]{0,64}?(?:api[_-]?key|secret|token|passwd|password|pwd|credential|private[_-]?key)[\w.-]{0,64}["']?\s*[:=]\s*(?:"(?:\\.|\\$|[^"\\])*(?:"|$)|'(?:\\.|\\$|[^'\\])*(?:'|$)|[^\s;|&]+)/gi,
+    /(?:api[_-]?key|secret|token|passwd|password|pwd|credential|private[_-]?key)(?=([\w.-]*))\1["']?\s*[:=]\s*(?:"(?:\\.|\\$|[^"\\])*(?:"|$)|'(?:\\.|\\$|[^'\\])*(?:'|$)|[^\s;|&]+)/gi,
     (match) => mask(match),
   );
 }
@@ -728,11 +731,12 @@ function sortFindings(findings) {
 
 // File names and parsed JSON strings come from the scanned repository. Control characters in them
 // would reach the terminal as escape sequences that can clear the screen, draw a fake clean
-// report, or write to the clipboard (OSC 52), so they are shown as \xNN instead.
+// report, or write to the clipboard (OSC 52). Format characters such as bidi overrides can reorder
+// what is shown. Both are shown as \u{XXXX} instead.
 function printable(value) {
   return String(value).replace(
-    /[\u0000-\u001f\u007f-\u009f]/g,
-    (c) => '\\x' + c.charCodeAt(0).toString(16).padStart(2, '0'),
+    /[\p{Cc}\p{Cf}]/gu,
+    (c) => '\\u{' + c.codePointAt(0).toString(16).padStart(4, '0') + '}',
   );
 }
 
