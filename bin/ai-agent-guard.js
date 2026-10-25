@@ -100,8 +100,19 @@ const SECRET_RULES = [
   },
 ];
 
+// Longest part of an evidence string that is masked. Evidence is shown cut to 180 characters, and
+// an attacker-written line can be half a megabyte, so masking stays bounded. A quoted value or key
+// block cut by the window has no end marker and is masked to the end.
+const MASK_WINDOW = 4000;
+
 function sanitizeEvidence(value) {
-  let sanitized = String(value);
+  // The whole key block, not just its header: a one-line PEM ("\n"-escaped in .env or JSON)
+  // carries the key body on the same line. Runs first because the private-key rule below masks
+  // the header this needs to find.
+  let sanitized = String(value).slice(0, MASK_WINDOW).replace(
+    /-----BEGIN (?:[A-Z0-9]+ )*PRIVATE KEY-----(?:.*?-----END (?:[A-Z0-9]+ )*PRIVATE KEY-----|.*)/g,
+    (match) => mask(match),
+  );
   for (const rule of SECRET_RULES) {
     const flags = rule.regex.flags.includes('g')
       ? rule.regex.flags
@@ -112,8 +123,10 @@ function sanitizeEvidence(value) {
     );
   }
   // Other rules can quote entire lines, including assignments outside the detector catalog.
+  // The name parts around the secret word are bounded: unbounded, a long line of secret words
+  // with no ':' or '=' backtracks in cubic time and the scan never finishes.
   return sanitized.replace(
-    /\b[\w.-]*(?:api[_-]?key|secret|token|passwd|password|pwd|credential|private[_-]?key)[\w.-]*["']?\s*[:=]\s*(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|[^\s;|&]+)/gi,
+    /\b[\w.-]{0,64}?(?:api[_-]?key|secret|token|passwd|password|pwd|credential|private[_-]?key)[\w.-]{0,64}["']?\s*[:=]\s*(?:"(?:\\.|\\$|[^"\\])*(?:"|$)|'(?:\\.|\\$|[^'\\])*(?:'|$)|[^\s;|&]+)/gi,
     (match) => mask(match),
   );
 }
@@ -415,7 +428,10 @@ function scanSkipPermissions(relPath, lines, findings) {
 
 function scanGithubWorkflow(relPath, text, findings) {
   const lower = text.toLowerCase();
-  const hasPRTarget = /on:\s*[\s\S]*?pull_request_target/.test(lower) ||
+  // indexOf, not /on:\s*[\s\S]*?pull_request_target/: that regex rescans the rest of the file
+  // from every "on:", which is quadratic on a large attacker-written workflow.
+  const firstOn = lower.indexOf('on:');
+  const hasPRTarget = (firstOn !== -1 && lower.indexOf('pull_request_target', firstOn + 3) !== -1) ||
     /\bpull_request_target\b/.test(lower);
   const hasCheckout = /uses:\s*actions\/checkout/.test(lower);
   const refsHeadSha = /github\.event\.pull_request\.head\.(?:sha|ref)/.test(lower);
@@ -710,11 +726,21 @@ function sortFindings(findings) {
   });
 }
 
+// File names and parsed JSON strings come from the scanned repository. Control characters in them
+// would reach the terminal as escape sequences that can clear the screen, draw a fake clean
+// report, or write to the clipboard (OSC 52), so they are shown as \xNN instead.
+function printable(value) {
+  return String(value).replace(
+    /[\u0000-\u001f\u007f-\u009f]/g,
+    (c) => '\\x' + c.charCodeAt(0).toString(16).padStart(2, '0'),
+  );
+}
+
 function printReport(findings, counters, root, scanComplete) {
   const out = [];
   out.push('');
   out.push(color('bold', '  AI Agent Guard') + color('dim', `  v${VERSION}`));
-  out.push(color('dim', `  scanned: ${path.resolve(root)}`));
+  out.push(color('dim', `  scanned: ${printable(path.resolve(root))}`));
   out.push('');
 
   if (findings.length === 0) {
@@ -729,10 +755,10 @@ function printReport(findings, counters, root, scanComplete) {
         out.push('  ' + color(f.severity, color('bold', f.severity)));
         lastSeverity = f.severity;
       }
-      const loc = color('cyan', `${f.file}:${f.line}`);
+      const loc = color('cyan', `${printable(f.file)}:${f.line}`);
       out.push(`    ${color(f.severity, '●')} ${loc}  ${color('dim', '[' + f.ruleId + ']')}`);
-      out.push(`      ${f.description}`);
-      out.push(`      ${color('dim', 'evidence:')} ${f.evidence}`);
+      out.push(`      ${printable(f.description)}`);
+      out.push(`      ${color('dim', 'evidence:')} ${printable(f.evidence)}`);
     }
   }
 

@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
-  "policyRevision": "2026-09-30",
+  "policyRevision": "2026-10-25",
   "publishedBaseline": "0.2.5",
   "role": "Free MIT terminal and CI preflight with a frozen detector catalog",
   "expectedSecretRulePropertyCount": 8,
   "expectedFindingRulePropertyCount": 24,
   "expectedOptionBranchCount": 8,
   "expectedLongOptionLiteralCount": 6,
-  "packageManifestSha256": "a8354e2944eef9a94e343028b772942c126eff3d45ef74fea27b5801788572de",
+  "packageManifestSha256": "1e65143614386e073152155bb7133e907e3a4540466d8cd6940c700abffd58e2",
   "allowedBinEntrypoints": {
     "ai-agent-guard": "bin/ai-agent-guard.js"
   },
@@ -20,7 +20,7 @@
   "allowedBinFiles": [
     "bin/ai-agent-guard.js"
   ],
-  "cliSourceSha256": "c8827a1ea4522d506e046b31e8e9d500fbec472736221b675a25cfe4ddbb9c6a",
+  "cliSourceSha256": "633ebe59105d31f38ade810667d792a931ea0eef854011245710d7a1c6edf402",
   "parseArgsSha256": "6f5d95e0beb0f9ce11f02d7afe1a40b9143914151fb23497df40d3c1d8e2cca1",
   "allowedParseArgsStringLiterals": [
     "-",

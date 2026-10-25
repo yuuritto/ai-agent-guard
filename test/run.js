@@ -145,6 +145,37 @@ try {
   fs.writeFileSync(path.join(crossRuleDir, 'run.sh'),
     `claude --dangerously-skip-permissions API_TOKEN=${shortValue}\n`);
   check('short sensitive values are masked', !run(['--json', '--path', crossRuleDir]).stdout.includes(shortValue));
+
+  // A one-line PEM ("\n"-escaped) carries the key body after the header.
+  const keyBody = 'Mc4' + 'Xy9'.repeat(20);
+  const keyLabel = 'PRIVATE' + ' KEY-----';
+  const pem = '-----BEGIN ' + keyLabel + '\\n' + keyBody + '\\n-----END ' + keyLabel + '\\n';
+  fs.writeFileSync(path.join(crossRuleDir, 'run.sh'), `claude --yolo SIGNING_KEY="${pem}" MODE=preview\n`);
+  for (const format of [[], ['--json']]) {
+    const stdout = run([...format, '--path', crossRuleDir]).stdout;
+    check('one-line private key body is masked in ' + (format.length ? 'JSON' : 'text'),
+      !stdout.includes(keyBody) && stdout.includes('MODE=preview'));
+  }
+
+  // Attacker-written input used to backtrack for hours; run() fails the test after 10 seconds.
+  fs.writeFileSync(path.join(crossRuleDir, 'run.sh'), 'claude --yolo ' + 'secret-'.repeat(70000) + '\n');
+  check('a long line of secret words without a separator finishes', run(['--json', '--path', crossRuleDir]).status === 1);
+  fs.unlinkSync(path.join(crossRuleDir, 'run.sh'));
+  fs.mkdirSync(path.join(crossRuleDir, '.github', 'workflows'), { recursive: true });
+  // About 2 seconds per file with the old regex, so six files exceed the 10-second limit.
+  for (let i = 0; i < 6; i++) {
+    fs.writeFileSync(path.join(crossRuleDir, '.github', 'workflows', `ci${i}.yml`), 'on: '.repeat(120000) + '\n');
+  }
+  check('large workflows of repeated "on:" finish', run(['--json', '--path', crossRuleDir]).status === 0);
+  fs.rmSync(path.join(crossRuleDir, '.github'), { recursive: true });
+
+  // Repository strings must not reach the terminal as escape sequences (screen clear, OSC 52).
+  fs.writeFileSync(path.join(crossRuleDir, '.mcp.json'), JSON.stringify({
+    mcpServers: { '\u001b[2J\u001b]52;c;ZWNobyBoaQ==\u0007fake': { command: 'npx', args: ['-y', 'some-server'] } },
+  }));
+  const escaped = run(['--path', crossRuleDir]).stdout;
+  check('control characters from the repository are shown, not sent to the terminal',
+    escaped.includes('\\x1b[2J') && !escaped.includes('\u001b[2J') && !escaped.includes('\u0007'));
 } finally {
   fs.rmSync(crossRuleDir, { recursive: true, force: true });
 }
